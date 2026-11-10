@@ -1,7 +1,7 @@
 @echo off
 setlocal
-rem Start local Hugo blog server and open browser.
-rem URL: http://localhost:1313/  (also reachable from LAN devices via this PC's IP)
+rem Start local Hugo blog server, reachable only from the hotspot LAN (192.168.137.x).
+rem Falls back to localhost-only when the hotspot adapter is absent.
 rem Stop: close the "Hugo Blog Server" window.
 
 cd /d "%~dp0"
@@ -14,11 +14,23 @@ if not exist "%HUGO%" (
     exit /b 1
 )
 
-echo Starting local blog server at http://localhost:1313/ ...
-start "Hugo Blog Server" "%HUGO%" server --bind 0.0.0.0 --port 1313 --disableFastRender
+rem Detect hotspot adapter 192.168.137.1; bind only to it when present
+ping -n 1 -w 300 192.168.137.1 >nul 2>&1
+if not errorlevel 1 (
+    set "BIND=192.168.137.1"
+    set "OPEN_URL=http://192.168.137.1:1313/"
+    echo Hotspot LAN detected. Blog visible only to devices on 192.168.137.x
+) else (
+    set "BIND=127.0.0.1"
+    set "OPEN_URL=http://localhost:1313/"
+    echo Hotspot adapter 192.168.137.1 not found. Server falls back to localhost only.
+)
+
+echo Starting blog server (bind %BIND%) ...
+start "Hugo Blog Server" "%HUGO%" server --bind %BIND% --port 1313 --disableFastRender
 
 ping -n 4 127.0.0.1 >nul
-start "" http://localhost:1313/
+start "" %OPEN_URL%
 
 echo Server window "Hugo Blog Server" is running. Close it to stop the server.
 endlocal
