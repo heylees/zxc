@@ -1,13 +1,18 @@
-# 临时产物与暂存区
+# Hugo
+public/
+resources/
+.hugo_build.lock
+
+# 临时产物与日志
 .temp/
+*.log
 
-# XHBlogs 官方仓库（自带 git，由其自身管理与更新）
-XinghuisamaBlogs/
-
-# 系统与编辑器
+# 系统
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# 编辑器
 .idea/
 .vscode/
-*.log
+*.swp

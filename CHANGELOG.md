@@ -3,25 +3,20 @@
 本项目采用 [Keep a Changelog](https://keepachangelog.com/zh-CN/) 风格记录版本迭代。
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [v0.2.0] - 2026-11-10
+## [v0.3.0] - 2026-11-10
 
-### 变更（Breaking）
-- **废弃 Hugo + PaperMod 静态博客架构，切换到 XHBlogs**（Next.js 毛玻璃风格博客 + 本地后台控制台）。
-- 参考项目：[XinghuisamaBlogs v0.4.4](https://github.com/heiehiehi/XinghuisamaBlogs)（CC BY-NC 4.0，个人非商用）。
+### 变更（Revert）
+- **回退到 Hugo + PaperMod 技术路线**，删除 XHBlogs 项目（v0.2.0 试用后放弃）。
+- XHBlogs 已从本机删除（官方仓库可随时重新获取：https://github.com/heiehiehi/XinghuisamaBlogs ）。
 
-### 新增
-- 本地后台控制台：Markdown 编辑器、草稿管理、图床配置、壁纸分组、搜索等。
-- 官方仓库已克隆至 `XinghuisamaBlogs/`，前端与控制台 npm 依赖、Python 依赖均已安装。
-- 控制台 `blogPath` 已预配置指向本机 `XinghuisamaBlogs/XHBlogs`。
-- 博客前端与控制台均已本地验证通过（页面渲染正常、零报错）。
-
-### 移除
-- Hugo 相关文件（hugo.toml、content/、themes/、build.ps1、start.bat、public/ 等）已移至 `.temp/hugo-removed/` 暂存，确认不再需要后可整体删除。
-- 旧版完整代码仍保留在 git 历史 tag `v0.1.0`，可随时回退。
+### 恢复
+- Hugo 全部文件从 git tag `v0.1.0` 恢复：hugo.toml、content/、themes/、build.ps1、start.bat、static/ 等。
+- `public/` 构建产物从暂存区移回，`hugo.exe` 工具一直保留在 `C:\Users\Administrator\tools\hugo`，无需重装。
+- 恢复后重新构建验证通过（20 页，正常）。
 
 ### 说明
-- XHBlogs 官方定位为 GitHub + Vercel 公网部署；本项目仅使用其**本地部分**（控制台写作 + 本地预览），不配置远程推送。
-- XHBlogs 代码由官方仓库自身 git 管理，更新用官方 `update.bat`。
+- 本地预览：双击 `start.bat`，或命令行 `hugo server`，浏览器访问 http://localhost:1313。
+- 旧 XHBlogs 方案期间未产生任何文章内容，无需数据迁移。
 
 ## [v0.1.0] - 2026-11-10
 
