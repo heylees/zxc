@@ -1,0 +1,43 @@
+{{- define "main" -}}
+<article class="post-single w-single">
+  <header class="post-header w-single-head">
+    <div class="w-single-meta">
+      {{- if not .Date.IsZero }}
+      <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date | time.Format (default "2006年1月2日" site.Params.DateFormat) }}</time>
+      {{- end }}
+      {{- range (.GetTerms "types") }}
+      <a class="w-type" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+      {{- end }}
+      {{- if (.Param "ShowReadingTime") }}
+      <span class="w-read-time">约 {{ .ReadingTime }} 分钟</span>
+      {{- end }}
+    </div>
+    <h1 class="post-title">{{ .Title }}</h1>
+    {{- with .Params.summary }}<p class="w-single-summary">{{ . }}</p>{{- end }}
+  </header>
+
+  {{- $isHidden := (.Param "cover.hiddenInSingle") | default (.Param "cover.hidden") | default false -}}
+  {{- partial "cover.html" (dict "cxt" . "IsSingle" true "isHidden" $isHidden) }}
+  {{- if (.Param "ShowToc") }}{{ partial "toc.html" . }}{{- end }}
+
+  {{- if .Content }}
+  <div class="post-content md-content">
+    {{- if not (.Param "disableAnchoredHeadings") }}
+    {{- partial "anchored_headings.html" .Content -}}
+    {{- else }}{{ .Content }}{{ end }}
+  </div>
+  {{- end }}
+
+  {{- partial "extend_post_content.html" . }}
+
+  <footer class="post-footer w-single-foot">
+    {{- with (.GetTerms "tags") }}
+    <ul class="w-single-tags">{{- range . }}<li><a href="{{ .RelPermalink }}">#{{ .LinkTitle }}</a></li>{{- end }}</ul>
+    {{- end }}
+    {{- if (.Param "ShowPostNavLinks") }}{{ partial "post_nav_links.html" . }}{{- end }}
+    {{- if (and site.Params.ShowShareButtons (ne .Params.disableShare true)) }}{{ partial "share_icons.html" . }}{{- end }}
+  </footer>
+
+  {{- if (.Param "comments") }}{{ partial "comments.html" . }}{{- end }}
+</article>
+{{- end }}

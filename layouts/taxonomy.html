@@ -1,0 +1,21 @@
+{{- define "main" -}}
+{{- $type := .Type -}}
+<header class="page-header w-page-head">
+  <h1>{{ if eq $type "types" }}按类型{{ else if eq $type "tags" }}按标签{{ else }}{{ .Title }}{{ end }}</h1>
+  <p class="w-page-desc">挑一个{{ if eq $type "types" }}类型{{ else }}标签{{ end }}，翻翻那一类写过的字。没有标注的旧文字，也能在「全部文字」和「时间」里找到。</p>
+</header>
+
+{{ partial "filter_bar.html" . }}
+
+<div class="w-term-grid">
+  {{- range .Data.Terms.Alphabetical }}
+  {{- $name := .Name -}}{{- $count := .Count -}}
+  {{- with site.GetPage (printf "/%s/%s" $type $name) }}
+  <a class="w-term-card" href="{{ .RelPermalink }}">
+    <span class="w-term-card-name">{{ .LinkTitle }}</span>
+    <span class="w-term-card-count">{{ $count }} 篇</span>
+  </a>
+  {{- end }}
+  {{- end }}
+</div>
+{{- end }}

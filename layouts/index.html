@@ -1,0 +1,85 @@
+{{- define "main" -}}
+
+{{- /* 首页开场「关于我」：文案全部来自 content/home-about/index.md，改那一个文件即可。
+       注意：传给 relURL 的路径不能带前导斜杠，否则会丢掉 GitHub Pages 项目页的
+       /仓库名/ 子路径。front matter 里写 /posts/ 也可以，这里统一去掉前缀。 */ -}}
+{{- with site.GetPage "/home-about" }}
+{{- $about := . -}}
+{{- /* 头像：路径写在 home-about/index.md 的 front matter；文件不存在时不渲染，避免破图 */ -}}
+{{- $avatar := $about.Params.avatar | default "" -}}
+{{- $avatarPath := "" -}}
+{{- if $avatar }}{{ $avatarPath = printf "/%s" (strings.TrimPrefix "/" $avatar) }}{{ end -}}
+<section class="w-hero w-about">
+  {{- if and $avatarPath (fileExists (printf "static%s" $avatarPath)) }}
+  {{- $avatarURL := strings.TrimPrefix "/" $avatarPath -}}
+  <img class="w-avatar" src="{{ $avatarURL | relURL }}" width="80" height="80" alt="我的头像">
+  {{- end }}
+  {{- with $about.Params.kicker }}<p class="w-hero-kicker">{{ . }}</p>{{- end }}
+  <h1 class="w-hero-title">{{ $about.Title }}</h1>
+  <div class="w-hero-intro w-about-body">{{ $about.Content }}</div>
+  <div class="w-hero-links">
+    {{- with $about.Params.primary_text }}
+    <a class="w-btn" href="{{ $about.Params.primary_url | strings.TrimPrefix "/" | relURL }}">{{ . }}</a>
+    {{- end }}
+    {{- with $about.Params.secondary_text }}
+    <a class="w-btn w-btn-ghost" href="{{ $about.Params.secondary_url | strings.TrimPrefix "/" | relURL }}">{{ . }}</a>
+    {{- end }}
+  </div>
+</section>
+{{- else }}
+<section class="w-hero w-about">
+  <p class="w-hero-kicker">写在最前面</p>
+  <h1 class="w-hero-title">关于我</h1>
+  <div class="w-hero-intro w-about-body"><p>{{ site.Params.writingIntro }}</p></div>
+  <div class="w-hero-links">
+    <a class="w-btn" href="{{ "posts/" | relURL }}">翻翻全部文字</a>
+    <a class="w-btn w-btn-ghost" href="{{ "archives/" | relURL }}">按时间回顾</a>
+  </div>
+</section>
+{{- end }}
+
+{{- $all := where site.RegularPages "Type" "in" site.Params.mainSections -}}
+{{- $recent := where $all "Params.types" "!=" nil -}}
+{{- $recent = first 6 (sort $recent "Date" "desc") -}}
+
+<section class="w-section">
+  <header class="w-section-head">
+    <h2>最近的文字</h2>
+    <a class="w-more" href="{{ "posts/" | relURL }}">全部 {{ len $all }} 篇 →</a>
+  </header>
+  <div class="w-grid">
+    {{- range $recent }}{{ partial "writing_card.html" . }}{{ end }}
+  </div>
+</section>
+
+<section class="w-section">
+  <header class="w-section-head"><h2>按类型慢慢翻</h2></header>
+  <div class="w-type-grid">
+    {{- range site.Params.writingTypes }}
+    {{- $t := . -}}
+    {{- with site.GetPage (printf "/types/%s" $t) }}
+    <a class="w-type-card" href="{{ .RelPermalink }}">
+      <span class="w-type-card-name">{{ .LinkTitle }}</span>
+      <span class="w-type-card-count">{{ len .Pages }} 篇</span>
+    </a>
+    {{- end }}
+    {{- end }}
+  </div>
+</section>
+
+<section class="w-section">
+  <header class="w-section-head">
+    <h2>常写的标签</h2>
+    <a class="w-more" href="{{ "tags/" | relURL }}">全部标签 →</a>
+  </header>
+  <div class="w-tag-cloud">
+    {{- range (first 12 site.Taxonomies.tags.ByCount) }}
+    {{- $name := .Name -}}{{- $count := .Count -}}
+    {{- with site.GetPage (printf "/tags/%s" $name) }}
+    <a href="{{ .RelPermalink }}">#{{ .LinkTitle }}<sup>{{ $count }}</sup></a>
+    {{- end }}
+    {{- end }}
+  </div>
+</section>
+
+{{- end }}

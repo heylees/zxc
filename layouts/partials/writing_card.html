@@ -1,0 +1,21 @@
+{{- /* 通用写作卡片：首页 / 列表 / 分类页复用 */ -}}
+{{- $d := .Date -}}
+{{- if $d.IsZero }}{{ $d = .Lastmod }}{{ end -}}
+{{- $summary := .Params.summary | default (.Summary | plainify | htmlUnescape) -}}
+<article class="w-card">
+  <div class="w-card-top">
+    {{- if not $d.IsZero }}
+    <time class="w-date" datetime="{{ $d.Format "2006-01-02" }}">{{ $d | time.Format (default "2006年1月2日" site.Params.DateFormat) }}</time>
+    {{- else }}
+    <span class="w-date">未标日期</span>
+    {{- end }}
+    {{- range (.GetTerms "types") }}
+    <a class="w-type" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+    {{- end }}
+  </div>
+  <h3 class="w-title"><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
+  {{- with $summary }}<p class="w-summary">{{ . }}</p>{{- end }}
+  {{- with (.GetTerms "tags") }}
+  <div class="w-tags">{{- range . }}<a href="{{ .RelPermalink }}">#{{ .LinkTitle }}</a>{{- end }}</div>
+  {{- end }}
+</article>

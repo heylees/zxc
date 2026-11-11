@@ -1,0 +1,31 @@
+{{- define "main" -}}
+
+<header class="page-header w-page-head">
+  <h1>{{ .Title }}</h1>
+  {{- with .Description }}<p class="w-page-desc">{{ . }}</p>{{- end }}
+</header>
+
+{{ partial "filter_bar.html" . }}
+
+{{- $pages := .Pages -}}
+{{- if eq .Kind "section" -}}
+{{- $pages = where site.RegularPages "Type" "in" site.Params.mainSections -}}
+{{- end -}}
+{{- $pages = sort $pages "Date" "desc" -}}
+{{- $paginator := .Paginate $pages -}}
+
+<div class="w-grid">
+  {{- range $paginator.Pages }}{{ partial "writing_card.html" . }}{{ end }}
+</div>
+
+{{- if gt $paginator.TotalPages 1 }}
+{{- /* pager.URL 已包含 baseURL 的子路径，直接使用即可；
+       再交给 relURL / absURL 反而会重复或丢掉 /仓库名/ 前缀。 */ -}}
+<nav class="w-pagination">
+  {{- if $paginator.HasPrev }}<a href="{{ $paginator.Prev.URL }}">← 上一页</a>{{ end }}
+  <span>第 {{ $paginator.PageNumber }} / {{ $paginator.TotalPages }} 页</span>
+  {{- if $paginator.HasNext }}<a href="{{ $paginator.Next.URL }}">下一页 →</a>{{ end }}
+</nav>
+{{- end }}
+
+{{- end }}

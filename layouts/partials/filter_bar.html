@@ -1,0 +1,15 @@
+{{- /* 类型 / 标签 / 时间筛选条：全部为静态链接，无 JS。
+       传给 relURL 的路径不带前导斜杠，才能保留 Pages 项目页的 /仓库名/ 前缀。 */ -}}
+{{- $current := .RelPermalink -}}
+<nav class="w-filter" aria-label="按类型、标签和时间筛选">
+  <span class="w-filter-label">翻一翻</span>
+  <a class="w-filter-item" href="{{ "posts/" | relURL }}">全部文字</a>
+  {{- range site.Params.writingTypes }}
+  {{- $t := . -}}
+  {{- with site.GetPage (printf "/types/%s" $t) }}
+  <a class="w-filter-item{{ if eq .RelPermalink $current }} is-active{{ end }}" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+  {{- end }}
+  {{- end }}
+  <a class="w-filter-item" href="{{ "tags/" | relURL }}">标签</a>
+  <a class="w-filter-item" href="{{ "archives/" | relURL }}">时间</a>
+</nav>

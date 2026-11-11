@@ -16,3 +16,15 @@ Desktop.ini
 .idea/
 .vscode/
 *.swp
+
+# 工作区数据（不推送到公开仓库）
+.workbuddy/
+
+# 音乐文件：避免把有版权的音频推到公开仓库。
+# static/music/.gitkeep 用于让空目录也能入库（sidebar 会扫描该目录）。
+static/music/*.mp3
+static/music/*.m4a
+static/music/*.ogg
+static/music/*.wav
+static/music/*.flac
+static/music/*.aac

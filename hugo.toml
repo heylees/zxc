@@ -1,19 +1,48 @@
-baseURL = "https://example.org/"
-title = "我的博客"
+# 线上是纯静态页面：push 到 main 后由 GitHub Actions 构建并发布，不需要任何本地服务或启动脚本。
+# baseURL 在 Actions 中由 configure-pages 注入（项目页自动带 /仓库名/ 子路径）。
+# 此处仅为本地执行 hugo / hugo server 时的默认值，不要写死线上域名。
+baseURL = "http://localhost:1313/"
+title = "zxc"
 locale = "zh-cn"
+defaultContentLanguage = "zh-cn"
 enableEmoji = true
 enableRobotsTXT = true
-relativeURLs = true
+# 关闭相对链接：线上 sitemap.xml / RSS 需要绝对 URL，Pages 项目页还要带子路径。
+# 原先设为 true 是为了配合已移除的离线构建脚本，支持 file:// 双击浏览。
+relativeURLs = false
 theme = "PaperMod"
 
+# 配合 Actions 的 --cacheDir，把图片缓存放到工作流指定的可缓存目录
+[caches]
+  [caches.images]
+    dir = ':cacheDir/images'
+
+# tags / categories 保持原有；types 为写作内容类型（front matter 字段 types）
+[taxonomies]
+tag = "tags"
+category = "categories"
+type = "types"
+
 [params]
-description = "基于 Hugo 的纯本地个人博客"
+description = "日常、随笔、读后感与读书笔记"
 defaultTheme = "light"
+mainSections = ["posts"]
+DateFormat = "2006年1月2日"
+writingIntro = "在这里记下日常、随想、读过的书，和那些值得回头看看的日子。"
+writingTypes = ["日记", "随笔", "读后感", "读书笔记"]
 ShowReadingTime = true
 ShowShareButtons = false
 ShowWordCount = true
 ShowPostNavLinks = true
 ShowCodeCopyButtons = true
+ShowRssButtonInSectionTermList = false
+
+[params.footer]
+text = "慢慢写，慢慢读"
+
+[params.assets]
+theme_color = "#b9794f"
+msapplication_TileColor = "#b9794f"
 
 [[menu.main]]
 name = "首页"
@@ -21,16 +50,26 @@ pageRef = "/"
 weight = 1
 
 [[menu.main]]
-name = "文章"
+name = "全部文字"
 pageRef = "/posts"
 weight = 2
 
 [[menu.main]]
+name = "类型"
+pageRef = "/types"
+weight = 3
+
+[[menu.main]]
 name = "标签"
 pageRef = "/tags"
-weight = 3
+weight = 4
+
+[[menu.main]]
+name = "时间"
+pageRef = "/archives"
+weight = 5
 
 [[menu.main]]
 name = "关于"
 pageRef = "/about"
-weight = 4
+weight = 6

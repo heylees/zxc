@@ -1,0 +1,30 @@
+{{- define "main" -}}
+<header class="page-header w-page-head">
+  <h1>时间</h1>
+  <p class="w-page-desc">按年月把写过的文字排好，方便回头翻。没有标注日期的旧文字，收在最后一组。</p>
+</header>
+
+{{ partial "filter_bar.html" . }}
+
+{{- $pages := where site.RegularPages "Type" "in" site.Params.mainSections -}}
+<div class="w-archive">
+  {{- range $pages.GroupByPublishDate "2006-01" }}
+  {{- $key := .Key -}}
+  {{- $parts := split $key "-" -}}
+  {{- $label := cond (hasPrefix $key "0001") "未标日期 · 过往文字" (printf "%s 年 %d 月" (index $parts 0) (int (index $parts 1))) -}}
+  <section class="w-archive-group">
+    <h2 class="w-archive-title" id="{{ $key }}">{{ $label }}<span>{{ len .Pages }} 篇</span></h2>
+    <ul class="w-archive-list">
+      {{- range .Pages }}
+      {{- $d := .Date }}{{ if $d.IsZero }}{{ $d = .Lastmod }}{{ end }}
+      <li>
+        <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+        {{- if and (not (hasPrefix $key "0001")) (not $d.IsZero) }}<time>{{ $d.Format "1月2日" }}</time>{{ end }}
+        {{- range (.GetTerms "types") }}<span class="w-archive-type">{{ .LinkTitle }}</span>{{ end }}
+      </li>
+      {{- end }}
+    </ul>
+  </section>
+  {{- end }}
+</div>
+{{- end }}

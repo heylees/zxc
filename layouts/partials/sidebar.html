@@ -1,0 +1,240 @@
+{{- /* 右侧栏：写作日历 + 本地音乐。
+       数据由 Hugo 在构建时内联生成，无 fetch、无外部依赖、无 JS 框架。
+       链接统一用 .Permalink / relURL；注意传给 relURL / absURL 的路径不能带
+       前导斜杠，否则会丢掉 GitHub Pages 项目页的 /仓库名/ 子路径。
+       static/music 可能不存在（音频被 .gitignore 忽略），扫描前先判断目录。 */ -}}
+
+{{- $pages := where site.RegularPages "Type" "in" site.Params.mainSections -}}
+{{- $days := slice -}}
+{{- range $pages -}}
+  {{- if not .Date.IsZero -}}
+    {{- $kind := "" -}}
+    {{- with .Params.types }}{{ $kind = delimit . " · " }}{{ end -}}
+    {{- $days = $days | append (dict "d" (.Date.Format "2006-01-02") "t" .Title "u" .Permalink "k" $kind) -}}
+  {{- end -}}
+{{- end -}}
+{{- $undated := sub (len $pages) (len $days) -}}
+
+{{- $audioExt := slice ".mp3" ".m4a" ".ogg" ".wav" ".flac" ".aac" -}}
+{{- $tracks := slice -}}
+{{- with os.Stat "static/music" -}}
+  {{- if .IsDir -}}
+    {{- range os.ReadDir "static/music" -}}
+      {{- $f := . -}}
+      {{- if and (not $f.IsDir) (in $audioExt (lower (path.Ext $f.Name))) -}}
+        {{- $tracks = $tracks | append (dict "n" (path.BaseName $f.Name) "u" (printf "music/%s" $f.Name | absURL)) -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+<section class="w-side-card" id="w-cal-card">
+  <h2 class="w-side-title">写作日历<span>有字的日子</span></h2>
+  <div class="w-cal-head">
+    <button class="w-cal-nav" type="button" id="w-cal-prev" aria-label="上个月">‹</button>
+    <span id="w-cal-label"></span>
+    <button class="w-cal-nav" type="button" id="w-cal-next" aria-label="下个月">›</button>
+  </div>
+  <div class="w-cal-week" aria-hidden="true">
+    <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+  </div>
+  <div class="w-cal-grid" id="w-cal-grid"></div>
+  <div class="w-cal-detail" id="w-cal-detail" hidden></div>
+  <p class="w-side-note">
+    带小圆点的日子写过东西，点一下就能看到那天的文字。
+    {{- if gt $undated 0 }}另有 {{ $undated }} 篇未标日期的旧文字，收在{{- end }}
+    <a href="{{ "archives/" | relURL }}">按时间回顾 →</a>
+  </p>
+</section>
+
+<section class="w-side-card" id="w-music-card">
+  <h2 class="w-side-title">听点什么<span>♪ 本地音乐</span></h2>
+  <p class="w-player-empty" id="w-player-empty">
+    把歌曲放进 <code>static/music/</code>，刷新页面后就会自动出现在这里。文件名即曲名。
+  </p>
+  <div id="w-player" hidden>
+    <div class="w-now">
+      <span id="w-track-name"></span>
+      <span id="w-track-time">0:00 / 0:00</span>
+    </div>
+    <input type="range" id="w-seek" min="0" max="100" step="0.1" value="0" aria-label="播放进度">
+    <div class="w-controls">
+      <button type="button" id="w-prev" aria-label="上一首">⏮</button>
+      <button type="button" id="w-play" aria-label="播放">▶</button>
+      <button type="button" id="w-next" aria-label="下一首">⏭</button>
+    </div>
+    <ul class="w-tracklist" id="w-tracklist"></ul>
+  </div>
+  <audio id="w-audio" preload="metadata"></audio>
+</section>
+
+<script>
+var W_DAYS = {{ $days | jsonify | safeJS }};
+var W_TRACKS = {{ $tracks | jsonify | safeJS }};
+(function () {
+  var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+
+  /* ---------------- 写作日历 ---------------- */
+  var byDate = {};
+  (W_DAYS || []).forEach(function (e) {
+    if (!byDate[e.d]) { byDate[e.d] = []; }
+    byDate[e.d].push(e);
+  });
+  var keys = Object.keys(byDate).sort();
+  var calLabel = document.getElementById('w-cal-label');
+  var calGrid = document.getElementById('w-cal-grid');
+  var calDetail = document.getElementById('w-cal-detail');
+  var activeKey = null;
+  var y, m;
+  if (keys.length) {
+    var last = keys[keys.length - 1];
+    y = Number(last.slice(0, 4)); m = Number(last.slice(5, 7)) - 1;
+  } else {
+    var now = new Date(); y = now.getFullYear(); m = now.getMonth();
+  }
+  var today = new Date();
+  var todayKey = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate());
+
+  function renderCal() {
+    calLabel.textContent = y + ' 年 ' + (m + 1) + ' 月';
+    var offset = (new Date(y, m, 1).getDay() + 6) % 7;
+    var total = new Date(y, m + 1, 0).getDate();
+    var html = '';
+    for (var i = 0; i < offset; i++) { html += '<span class="w-cal-cell is-empty"></span>'; }
+    for (var d = 1; d <= total; d++) {
+      var key = y + '-' + pad(m + 1) + '-' + pad(d);
+      var has = !!byDate[key];
+      html += '<button type="button" class="w-cal-cell' + (has ? ' has-post' : '') +
+        (key === todayKey ? ' is-today' : '') + '" data-date="' + key + '"' +
+        (has ? '' : ' disabled') + '>' + d + (has ? '<i class="w-cal-dot"></i>' : '') + '</button>';
+    }
+    calGrid.innerHTML = html;
+    calDetail.hidden = true;
+    calDetail.innerHTML = '';
+    activeKey = null;
+  }
+
+  calGrid.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('.w-cal-cell.has-post') : null;
+    if (!btn) { return; }
+    var key = btn.getAttribute('data-date');
+    if (key === activeKey) {
+      calDetail.hidden = true; activeKey = null;
+      calGrid.querySelectorAll('.w-cal-cell').forEach(function (c) { c.classList.remove('is-active'); });
+      return;
+    }
+    activeKey = key;
+    var list = byDate[key] || [];
+    var parts = key.split('-');
+    calDetail.innerHTML = '';
+    var head = document.createElement('div');
+    head.className = 'w-cal-detail-head';
+    var strong = document.createElement('strong');
+    strong.textContent = Number(parts[1]) + ' 月 ' + Number(parts[2]) + ' 日';
+    var count = document.createElement('span');
+    count.textContent = '共 ' + list.length + ' 篇';
+    head.appendChild(strong);
+    head.appendChild(count);
+    var ul = document.createElement('ul');
+    ul.className = 'w-cal-posts';
+    list.forEach(function (p) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = p.u;
+      a.textContent = p.t;
+      li.appendChild(a);
+      if (p.k) {
+        var kind = document.createElement('span');
+        kind.className = 'w-cal-kind';
+        kind.textContent = p.k;
+        li.appendChild(kind);
+      }
+      ul.appendChild(li);
+    });
+    calDetail.appendChild(head);
+    calDetail.appendChild(ul);
+    calDetail.hidden = false;
+    calGrid.querySelectorAll('.w-cal-cell').forEach(function (c) {
+      c.classList.toggle('is-active', c.getAttribute('data-date') === key);
+    });
+  });
+
+  document.getElementById('w-cal-prev').addEventListener('click', function () {
+    m--; if (m < 0) { m = 11; y--; } renderCal();
+  });
+  document.getElementById('w-cal-next').addEventListener('click', function () {
+    m++; if (m > 11) { m = 0; y++; } renderCal();
+  });
+  renderCal();
+
+  /* ---------------- 本地音乐 ---------------- */
+  var tracks = W_TRACKS || [];
+  var emptyTip = document.getElementById('w-player-empty');
+  var player = document.getElementById('w-player');
+  if (!tracks.length) { emptyTip.hidden = false; return; }
+  emptyTip.hidden = true;
+  player.hidden = false;
+
+  var audio = document.getElementById('w-audio');
+  var nameEl = document.getElementById('w-track-name');
+  var timeEl = document.getElementById('w-track-time');
+  var seek = document.getElementById('w-seek');
+  var playBtn = document.getElementById('w-play');
+  var listEl = document.getElementById('w-tracklist');
+  var idx = 0;
+
+  function fmt(s) {
+    if (!isFinite(s) || s < 0) { s = 0; }
+    var mm = Math.floor(s / 60), ss = Math.floor(s % 60);
+    return mm + ':' + (ss < 10 ? '0' + ss : ss);
+  }
+
+  tracks.forEach(function (t, i) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = t.n;
+    b.setAttribute('data-i', i);
+    li.appendChild(b);
+    listEl.appendChild(li);
+  });
+
+  function markList() {
+    listEl.querySelectorAll('button').forEach(function (b) {
+      b.classList.toggle('is-current', Number(b.getAttribute('data-i')) === idx);
+    });
+  }
+
+  function load(i, autoplay) {
+    idx = (i + tracks.length) % tracks.length;
+    audio.src = tracks[idx].u;
+    nameEl.textContent = tracks[idx].n;
+    timeEl.textContent = '0:00 / 0:00';
+    seek.value = 0;
+    markList();
+    if (autoplay) { audio.play().catch(function () {}); }
+  }
+
+  playBtn.addEventListener('click', function () {
+    if (audio.paused) { audio.play().catch(function () {}); } else { audio.pause(); }
+  });
+  audio.addEventListener('play', function () { playBtn.textContent = '⏸'; playBtn.setAttribute('aria-label', '暂停'); });
+  audio.addEventListener('pause', function () { playBtn.textContent = '▶'; playBtn.setAttribute('aria-label', '播放'); });
+  document.getElementById('w-prev').addEventListener('click', function () { load(idx - 1, true); });
+  document.getElementById('w-next').addEventListener('click', function () { load(idx + 1, true); });
+  listEl.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button[data-i]') : null;
+    if (b) { load(Number(b.getAttribute('data-i')), true); }
+  });
+  audio.addEventListener('loadedmetadata', function () { timeEl.textContent = '0:00 / ' + fmt(audio.duration); });
+  audio.addEventListener('timeupdate', function () {
+    timeEl.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
+    if (audio.duration && isFinite(audio.duration)) { seek.value = (audio.currentTime / audio.duration) * 100; }
+  });
+  seek.addEventListener('input', function () {
+    if (audio.duration && isFinite(audio.duration)) { audio.currentTime = (seek.value / 100) * audio.duration; }
+  });
+  audio.addEventListener('ended', function () { load(idx + 1, true); });
+  load(0, false);
+})();
+</script>
